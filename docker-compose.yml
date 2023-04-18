@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  app:
+    build:
+      context: ./app
+    restart: unless-stopped
+    volumes: 
+      - "./data/web:/var/www/html"
+    ports:
+      - 8040:80
+    environment:
+      PRINTER1_ENABLE: 1
+      PRINTER1_NAME: dymo400
+      PRINTER1_DEVURI: socket://[SERVER_IP]:9100
+      PRINTER1_PPDFILE: /usr/share/cups/model/lw400.ppd
+      PRINTER2_ENABLE: 0
+      PRINTER2_NAME: dymo400
+      PRINTER2_DEVURI: socket://[SERVER_IP]:9100
+      PRINTER2_PPDFILE: /usr/share/cups/model/lw400.ppd
+
+

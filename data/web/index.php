@@ -5,7 +5,7 @@ include "libs/autoload.php";
 $config['max_copies'] = 10;
 $config['tmpdir'] = sys_get_temp_dir()."/";
 $config['tmpdelete'] = 60 * 60 * 24 * 2; // 2 days
-$config['printermodels'] = array("dymo320"=>"Dymo LabelWriter 320", "dymo450"=>"Dymo LabelWriter 450");
+$config['printermodels'] = array("dymo400"=>"Dymo LabelWriter 400");
 
 
 // Check writable
@@ -89,20 +89,20 @@ if(isset($_GET['download'])) {
 
 		switch($form_template) {
 			default: //tmp1
-				$printermodel = "dymo320";
+				$printermodel = "dymo400";
 				$pdf = new FPDF('L','mm',array(54,25));
 				for($i=1;$i<=$form_copies;$i++) {
 					$pdf->addPage('L');
 					$pdf->SetFont('Arial','B',16);
-					$pdf->Text(2, 10, 'Dauerleihgabe');
+					$pdf->Text(2, 10, 'MHD:');
 					$pdf->Text(2, 20, iconv('UTF-8', 'windows-1252', $form_text));
 					if($form_logo) {
-						$pdf->Image("assets/wwlabs-150x150.png", 42, 2, 10, 10);
+						$pdf->Image("assets/wwlabs-150x150.png", 42, 2, 10, 20);
 					}
 				}
 			break;
 			case "tmp2":
-				$printermodel = "dymo320";
+				$printermodel = "dymo400";
 				$pdf = new FPDF('L','mm',array(54,25));
 				for($i=1;$i<=$form_copies;$i++) {
 					$pdf->addPage('L');
@@ -115,7 +115,7 @@ if(isset($_GET['download'])) {
 				}
 			break;
 			case "tmp3":
-				$printermodel = "dymo450";
+				$printermodel = "dymo400";
 				$pdf = new FPDF('L','mm',array(88,36));
 				for($i=1;$i<=$form_copies;$i++) {
 					$pdf->addPage('L');
@@ -128,7 +128,7 @@ if(isset($_GET['download'])) {
 				}
 			break;
 			case "tmp4":
-				$printermodel = "dymo450";
+				$printermodel = "dymo400";
 				$pdf = new FPDF('L','mm',array(88,36));
 				for($i=1;$i<=$form_copies;$i++) {
 					$pdf->addPage('L');
@@ -147,7 +147,7 @@ if(isset($_GET['download'])) {
 			$barcode = $generator->getBarcode(iconv('UTF-8', 'windows-1252', $form_barcode1), $generator::TYPE_CODE_128, 6);
 			$barcodefile = $config['tmpdir'].tempfile('web2dymo', 'png', $config['tmpdir']);
 			file_put_contents($barcodefile, $barcode);
-			$printermodel = "dymo450";
+			$printermodel = "dymo400";
 			$pdf = new FPDF('L','mm',array(88,36));
 			for($i=1;$i<=$form_copies;$i++) {
 				$pdf->addPage('L');
@@ -160,7 +160,7 @@ if(isset($_GET['download'])) {
 			}
 			break;
 			case "tmp6":
-			$printermodel = "dymo450";
+			$printermodel = "dymo400";
 			$generator = new \Picqer\Barcode\BarcodeGeneratorPNG();
 			$barcode = $generator->getBarcode(iconv('UTF-8', 'windows-1252', $form_barcode2), $generator::TYPE_EAN_13, 4);
 			$barcodefile = $config['tmpdir'].tempfile('web2dymo', 'png', $config['tmpdir']);
@@ -214,7 +214,7 @@ if(isset($_GET['download'])) {
 				if($config['printermodels'][$printermodel] != "") {
 					$pdf->Output('F', $temp_file);
 				
-					$exec = "lp -d ".$printermodel." ".$temp_file;
+					$exec = "lp -d ".$printermodel." -o media=w72h154 ".$temp_file;
 					exec($exec);
 					
 					echo json_encode(array('okay'=>true, 'html'=>'Label will be printed shortly on <b>'.$config['printermodels'][$printermodel].'</b>!<br />Please wait a moment...', 'debug'=>$exec));
@@ -260,7 +260,7 @@ if(isset($_GET['download'])) {
 								<div class="form-group">
 									<label for="template">Template</label>
 									<select class="form-control" name="template">
-										<option value="tmp1">Dauerleihgabe (54x25mm [11352])</option>
+										<option value="tmp1">Mindesthaltbarkeit (54x25mm [11352])</option>
 										<option value="tmp2">Freitext (54x25mm [11352], zwei Zeilen)</option>
 										<option value="tmp3">Dauerleihgabe (88x36mm [99012])</option>
 										<option value="tmp4">Freitext (88x36mm [99012], vier Zeilen)</option>
