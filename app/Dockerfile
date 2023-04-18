@@ -6,16 +6,19 @@ FROM ubuntu
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install driver and CUPS
-RUN apt-get update -y && apt-get install -y wget supervisor cups cups-client printer-driver-dymo apache2 php libapache2-mod-php php-imagick python3
+RUN apt-get update -y && apt-get install -y wget supervisor cups cups-client printer-driver-dymo apache2 php libapache2-mod-php php-imagick python3 php-gd
 RUN mkdir -p /var/log/supervisor
 
 # Apache log to stdout
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
-    ln -sf /proc/self/fd/1 /var/log/apache2/error.log
+    ln -sf /proc/self/fd/1 /var/log/apache2/error.log \
+
+# enable php-gd
+RUN sed -i 's/;extension=gd/extension=gd/g' /etc/php/8.1/apache2/php.ini
+#TODO make version-independent
 
 # Change ImageMagick policy
 RUN sed -i 's/<policy domain="coder" rights="none" pattern="PDF" \/>/<policy domain="coder" rights="read|write" pattern="PDF" \/>/g' /etc/ImageMagick-6/policy.xml
-
 
 # Download and install the printer definition
 WORKDIR /tmp

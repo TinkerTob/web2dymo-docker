@@ -1,16 +1,21 @@
 <?php
-
 include "libs/autoload.php";
 
 $config['max_copies'] = 10;
-$config['tmpdir'] = sys_get_temp_dir()."/";
+//$config['tmpdir'] = sys_get_temp_dir()."/";
+$config['tmpdir'] = "/var/www/html/temp/";
 $config['tmpdelete'] = 60 * 60 * 24 * 2; // 2 days
 $config['printermodels'] = array("dymo400"=>"Dymo LabelWriter 400");
 
-
 // Check writable
 if (!is_writable($config['tmpdir'])) {
-    die($config['tmpdir']." must me writeable!");
+    die($config['tmpdir']." must be writeable!");
+}
+function logger($log_msg) {
+	$logfile = "log.txt";
+	$log_msg = date('Ymd-H:i:s') . "\t".$log_msg;
+	// if you don't add `FILE_APPEND`, the file will be erased each time you add a log
+	file_put_contents($logfile, $log_msg . "\n", FILE_APPEND);
 }
 
 // Clean tempfiles
@@ -45,8 +50,100 @@ if(isset($_GET['download'])) {
         exit;
     }
 	
+} elseif(isset($_GET['grocy'])) {
+	if(isset($_GET['debug'])) {
+		$debug = true;
+		ini_set('display_errors', '1');
+		ini_set('display_startup_errors', '1');
+		error_reporting(E_ALL);
+		// var_dump($_POST);
+	} else {
+		$debug = false;
+	}
+	logger(json_encode($_POST));
+	// Parse Data
+	$gr_product = trim($_POST['product']);
+	$gr_barcode = trim($_POST['grocycode']);
+	$gr_duedate = trim($_POST['due_date']);
+	$gr_copies = 1;
+
+	$gr_product_wrapped = wordwrap($gr_product,35,chr(10), true);
+	//echo $gr_product_wrapped;
+	echo $gr_duedate;
+	preg_match('/(.*)\s(\d{2,4})-(\d{2})-(\d{2})/', $gr_duedate, $m);
+	if (count($m) == 5)
+		$gr_duedate = $m[1]."\t".$m[4].".".$m[3].".".substr($m[2], -2);
+	else
+		$gr_duedate = "";
+	echo $gr_duedate;
+
+	// Create Datamatrix Code
+	require 'libs/barcode/barcode.php';
+	$symbology = "gs1-dmtx-s";
+	$barcode_options =  [];
+//			"w" => 10,
+//			"h" => 10,
+//	];
+	$barcodefile_2D = $config['tmpdir'].tempfile('web2dymo_2D', 'png', $config['tmpdir']);
+	$generator = new barcode_generator();
+	$barcode = $generator->render_image($symbology, $gr_barcode, $barcode_options);
+	imagepng($barcode, $barcodefile_2D);
+
+//	// Create 1D Barcode
+//	$symbology = "code-128";
+//	$barcode_options =  [];
+//	$barcodefile_1D = $config['tmpdir'].tempfile('web2dymo_1D', 'png', $config['tmpdir']);
+//	$generator = new barcode_generator();
+//	$barcode = $generator->render_image($symbology, $gr_barcode, $barcode_options);
+//	$w_1D = imagesx($barcode); // in px
+//	$h_1D_org = imagesy($barcode); // in px
+//	$h_1D = 7; // in mm for pdf output
+//	$crop = ['x' => 0,
+//		    'y' => $h_1D_org - round( $h_1D_org/3),
+//			'width' => $w_1D,
+//			'height' => round($h_1D_org/3)];
+//	$barcode= imagecrop($barcode, $crop);
+//	imagepng($barcode, $barcodefile_1D);
+
+
+	// Create Label
+	require('libs/fpdf/fpdf.php');
+	$printermodel = "dymo400";
+	$pdf = new FPDF('L','mm',array(54,25));
+	for($i=1;$i<=$gr_copies;$i++) {
+		$pdf->addPage('L');
+		$pdf->SetFont('Arial', 'B', 10);
+		$pdf->Text(2, 23, iconv('UTF-8', 'windows-1252', $gr_product));
+//		$pdf->Image($barcodefile_1D, 1, 4.5, 39, $h_1D);
+		$pdf->Image($barcodefile_2D, 41, 1, 10, 10);
+		$pdf->SetFont('Arial', 'B', 16);
+		$pdf->Text(2, 5, $gr_duedate);
+	}
+	$temp_file = $config['tmpdir'].tempfile('web2dymo', 'pdf', $config['tmpdir']);
+	$pdf->Output('F', $temp_file);
+
+	// output label
+	if ($debug) {
+//		header('Content-Description: File Transfer');
+//		header('Content-Type: application/octet-stream');
+//		header('Content-Disposition: attachment; filename="'.basename($temp_file).'"');
+//		header('Expires: 0');
+//		header('Cache-Control: must-revalidate');
+//		header('Pragma: public');
+//		header('Content-Length: ' . filesize($temp_file));
+//		flush(); // Flush system output buffer
+//		readfile($temp_file);
+		echo $temp_file;
+	} else {
+		if ($config['printermodels'][$printermodel] != "") {
+			$pdf->Output('F', $temp_file);
+			$exec = "lp -d " . $printermodel . " -o media=w72h154 " . $temp_file;
+			exec($exec);
+		}
+	}
+
 } elseif(isset($_GET['ajax'])) {
-	
+
 	header('Content-Type: application/json');
 	
 	if(isset($_GET['debug'])) {
@@ -220,6 +317,7 @@ if(isset($_GET['download'])) {
 					echo json_encode(array('okay'=>true, 'html'=>'Label will be printed shortly on <b>'.$config['printermodels'][$printermodel].'</b>!<br />Please wait a moment...', 'debug'=>$exec));
 			
 				} else {
+					$exec="";
 					echo json_encode(array('okay'=>true, 'html'=>'Error im template file. Printer not found!', 'debug'=>$exec));
 			
 				}
