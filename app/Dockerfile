@@ -11,7 +11,7 @@ RUN mkdir -p /var/log/supervisor
 
 # Apache log to stdout
 RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
-    ln -sf /proc/self/fd/1 /var/log/apache2/error.log \
+    ln -sf /proc/self/fd/1 /var/log/apache2/error.log
 
 # enable php-gd
 RUN sed -i 's/;extension=gd/extension=gd/g' /etc/php/8.1/apache2/php.ini

@@ -12,9 +12,9 @@ services:
     environment:
       PRINTER1_ENABLE: 1
       PRINTER1_NAME: dymo400
-      PRINTER1_DEVURI: socket://192.168.178.1:9100
+      PRINTER1_DEVURI: ipp://dymo:631/printers/LW400
       PRINTER1_PPDFILE: /usr/share/cups/model/lw400.ppd
       PRINTER2_ENABLE: 0
       PRINTER2_NAME: dymo400
-      PRINTER2_DEVURI: socket://192.168.178.1:9100
+      PRINTER2_DEVURI: ipp://dymo:631/printers/LW400
       PRINTER2_PPDFILE: /usr/share/cups/model/lw400.ppd
